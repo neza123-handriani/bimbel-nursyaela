@@ -1,0 +1,87 @@
+-- SQL migration generated from planing.md
+-- Create database and tables for Sistem Informasi Bimbingan Belajar
+
+CREATE DATABASE IF NOT EXISTS bimbel_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE bimbel_db;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nama VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('admin','tutor','user') DEFAULT 'user',
+  foto VARCHAR(255) DEFAULT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS tutors (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nama VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  spesialisasi VARCHAR(255) DEFAULT NULL,
+  foto VARCHAR(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS kelas (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nama_kelas VARCHAR(255) NOT NULL,
+  deskripsi TEXT,
+  harga DECIMAL(12,2) DEFAULT 0.00,
+  tutor_id INT UNSIGNED,
+  FOREIGN KEY (tutor_id) REFERENCES tutors(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS materi (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  kelas_id INT UNSIGNED NOT NULL,
+  judul VARCHAR(255) NOT NULL,
+  file_materi VARCHAR(255) DEFAULT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (kelas_id) REFERENCES kelas(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS jadwal (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  kelas_id INT UNSIGNED NOT NULL,
+  tanggal DATE NOT NULL,
+  jam_mulai TIME NOT NULL,
+  jam_selesai TIME NOT NULL,
+  FOREIGN KEY (kelas_id) REFERENCES kelas(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS enrollments (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  kelas_id INT UNSIGNED NOT NULL,
+  status ENUM('pending','active','cancelled') DEFAULT 'pending',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (kelas_id) REFERENCES kelas(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  invoice VARCHAR(100) NOT NULL UNIQUE,
+  user_id INT UNSIGNED NOT NULL,
+  kelas_id INT UNSIGNED NOT NULL,
+  total DECIMAL(12,2) DEFAULT 0.00,
+  status ENUM('pending','paid','failed','expired') DEFAULT 'pending',
+  payment_method VARCHAR(50) DEFAULT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (kelas_id) REFERENCES kelas(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS payments (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  transaction_id INT UNSIGNED NOT NULL,
+  gateway_reference VARCHAR(255) DEFAULT NULL,
+  payment_status VARCHAR(50) DEFAULT NULL,
+  paid_at DATETIME DEFAULT NULL,
+  FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Indexes for common queries
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_kelas_tutor ON kelas(tutor_id);
+CREATE INDEX idx_transactions_invoice ON transactions(invoice);
